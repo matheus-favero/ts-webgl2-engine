@@ -8,13 +8,16 @@ function createShader(
     console.log("Couldn't load shader");
     return;
   }
+
   gl.shaderSource(shader, script);
+
   gl.compileShader(shader);
   const statusSuccess = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
   if (statusSuccess) {
     return shader;
   }
-  console.error("Error while compiling shader: ", gl.getShaderInfoLog(shader));
+
+  console.error(`Error while compiling shader:\n${script}\n${gl.getShaderInfoLog(shader)}`);
   gl.deleteShader(shader);
 }
 
@@ -24,18 +27,38 @@ function createProgram(
   fragmentShader: WebGLShader,
 ) {
   const program = gl.createProgram();
+
   gl.attachShader(program, vertexShader);
   gl.attachShader(program, fragmentShader);
+
   gl.linkProgram(program);
-  const statusSuccess = gl.getProgramParameter(program, gl.COMPILE_STATUS);
+
+  const statusSuccess = gl.getProgramParameter(program, gl.LINK_STATUS);
   if (statusSuccess) {
     return program;
   }
+
   console.error(
-    "Error while compiling shader: ",
+    "Error while compiling program: ",
     gl.getProgramInfoLog(program),
   );
   gl.deleteProgram(program);
+}
+
+function render(
+  gl: WebGL2RenderingContext,
+  vao: WebGLVertexArrayObject,
+  program: WebGLProgram,
+) {
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+
+  gl.useProgram(program);
+
+  gl.bindVertexArray(vao);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  window.requestAnimationFrame(() => render(gl, vao, program));
 }
 
 async function main() {
@@ -47,8 +70,8 @@ async function main() {
     return;
   }
 
-  const vertexScript = await fetch("./shaders/vertex.glsl");
-  const fragmentScript = await fetch("./shaders/fragment.glsl");
+  const vertexScript = await fetch("shaders/vertex.glsl");
+  const fragmentScript = await fetch("shaders/fragment.glsl");
 
   const vertexShader = createShader(
     gl,
@@ -67,8 +90,14 @@ async function main() {
   }
 
   const program = createProgram(gl, vertexShader, fragmentShader);
+  if (!program) {
+    console.error("Couldn't load program");
+    return;
+  }
 
   const vao = gl.createVertexArray();
+
+  render(gl, vao, program);
 }
 
 try {
