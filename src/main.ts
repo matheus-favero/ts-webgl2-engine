@@ -56,7 +56,7 @@ function render(
   gl.useProgram(program);
 
   gl.bindVertexArray(vao);
-  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
 
   window.requestAnimationFrame(() => render(gl, vao, program));
 }
