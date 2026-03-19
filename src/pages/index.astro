@@ -1,17 +1,42 @@
 ---
-
+import "../styles/index.css";
 ---
 
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
+    <head>
+        <meta charset="utf-8" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" href="/favicon.ico" />
+        <meta name="viewport" content="width=device-width" />
+        <meta name="generator" content={Astro.generator} />
+        <title>Astro</title>
+    </head>
+    <body>
+        <canvas> Your browser doesn't support Webgl2 </canvas>
+        <div>
+            <h4>Rotate X:</h4>
+            <input type="range" min="0" max="100" value="0" id="rotX" />
+
+			<h4>Rotate Y:</h4>
+            <input type="range" min="0" max="100" value="0" id="rotX" />
+			
+			<h4>Rotate Z:</h4>
+            <input type="range" min="0" max="100" value="0" id="rotX" />
+        </div>
+
+
+        <script>
+            import { Engine } from "../scripts/Engine";
+            const canvas = document.querySelector("canvas");
+
+            if (!canvas) {
+                console.error("No element canvas detected");
+            } else {
+                canvas.width = window.innerHeight;
+                canvas.height = window.innerHeight;
+                const engine = new Engine(canvas);
+                engine.init();
+            }
+        </script>
+    </body>
 </html>
