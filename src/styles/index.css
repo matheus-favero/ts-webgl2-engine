@@ -1,6 +1,7 @@
 *{
     font-family: 'Comic Sans MS', cursive; 
 }
+
 body{
     margin: 0;
     background-color: rgb(47, 47, 47);
@@ -8,13 +9,15 @@ body{
     display: flex;
     justify-content: center;
 }
-body > div{
+body > .container{
     position: absolute;
     padding: 16px;
+    display: flex;
+    gap: 32px;
 }
-body > div > h4{
+body > .container > h4{
     margin: 0;    
 }
-body > div > input{
+body > .container > input{
     margin-bottom: 32px;    
 }

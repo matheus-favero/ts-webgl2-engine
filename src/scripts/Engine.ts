@@ -1,3 +1,4 @@
+import { ModelInterpreter3D } from "./ModelInterpreter3D";
 import { Transformation } from "./Transformation";
 
 export class Engine {
@@ -23,7 +24,35 @@ export class Engine {
             (document.querySelector("#rotZ") as HTMLInputElement)?.value,
         );
 
-        return [valueX, valueY, valueZ];
+        return [valueX, valueY, valueZ].map((item) => item * Math.PI * 0.02);
+    }
+
+    private getTranslationSlidersValue(): number[] {
+        let valueX = Number(
+            (document.querySelector("#transX") as HTMLInputElement)?.value,
+        );
+        let valueY = Number(
+            (document.querySelector("#transY") as HTMLInputElement)?.value,
+        );
+        let valueZ = Number(
+            (document.querySelector("#transZ") as HTMLInputElement)?.value,
+        );
+
+        return [valueX, valueY, valueZ].map((item) => item * 0.02);
+    }
+
+    private getScaleSlidersValue(): number[] {
+        let valueX = Number(
+            (document.querySelector("#scaleX") as HTMLInputElement)?.value,
+        );
+        let valueY = Number(
+            (document.querySelector("#scaleY") as HTMLInputElement)?.value,
+        );
+        let valueZ = Number(
+            (document.querySelector("#scaleZ") as HTMLInputElement)?.value,
+        );
+
+        return [valueX, valueY, valueZ].map((item) => item * 0.05);
     }
 
     private configureShader(type: number, script: string) {
@@ -63,7 +92,8 @@ export class Engine {
     private render(
         program: WebGLProgram,
         vertexArrayObj: WebGLVertexArrayObject,
-        rotationUniform: WebGLUniformLocation,
+        transformationUniform: WebGLUniformLocation,
+        colorUniform: WebGLUniformLocation,
         vtxCount: number,
     ) {
         const gl = this.gl;
@@ -72,19 +102,33 @@ export class Engine {
 
         gl.useProgram(program);
 
-        const rotations = this.getRotationSlidersValue().map(
-            (item) => item * Math.PI * 0.02,
+        const rotation = this.getRotationSlidersValue();
+        const translation = this.getTranslationSlidersValue();
+        const scaling = this.getScaleSlidersValue();
+
+        let transfMatrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+
+        transfMatrix = Transformation.applyScaling(transfMatrix, scaling);
+        transfMatrix = Transformation.applyRotation(transfMatrix, rotation);
+        transfMatrix = Transformation.applyTranslation(
+            transfMatrix,
+            translation,
         );
-        const transfMatrix = Transformation.transform(
-            rotations,
-            this.numberOfDimensions,
-        );
-        gl.uniformMatrix4fv(rotationUniform, false, transfMatrix);
+        transfMatrix = Transformation.applyPerspective(transfMatrix);
+
+        gl.uniformMatrix4fv(transformationUniform, false, transfMatrix);
+        gl.uniform3f(colorUniform, 0.5 , 0.3, 0.1);
 
         gl.drawArrays(gl.TRIANGLES, 0, vtxCount);
 
         window.requestAnimationFrame(() =>
-            this.render(program, vertexArrayObj, rotationUniform, vtxCount),
+            this.render(
+                program,
+                vertexArrayObj,
+                transformationUniform,
+                colorUniform,
+                vtxCount,
+            ),
         );
     }
 
@@ -118,23 +162,12 @@ export class Engine {
         const vertexArrayObj = gl.createVertexArray();
         gl.bindVertexArray(vertexArrayObj);
 
-        const vtxPositions = new Float32Array([
-            //front
-            -0.5, 0.5, -0.5, 1, 0.5, -0.5, -0.5, 1, -0.5, -0.5, -0.5, 1, -0.5,
-            0.5, -0.5, 1, 0.5, 0.5, -0.5, 1, 0.5, -0.5, -0.5, 1,
+        const model3DObj = await fetch("./3d/Caveira_fudida.obj");
+        const model3DText = await model3DObj.text();
 
-            //right
-            0.5, 0.5, -0.5, 1, 0.5, 0.5, 0.5, 1, 0.5, -0.5, 0.5, 1, 0.5, 0.5,
-            -0.5, 1, 0.5, -0.5, 0.5, 1, 0.5, -0.5, -0.5, 1,
-
-            //left
-            -0.5, 0.5, -0.5, 1, -0.5, 0.5, 0.5, 1, -0.5, -0.5, 0.5, 1, -0.5,
-            0.5, -0.5, 1, -0.5, -0.5, 0.5, 1, -0.5, -0.5, -0.5, 1,
-
-            //back
-            -0.5, 0.5, 0.5, 1, 0.5, -0.5, 0.5, 1, -0.5, -0.5, 0.5, 1, -0.5, 0.5,
-            0.5, 1, 0.5, 0.5, 0.5, 1, 0.5, -0.5, 0.5, 1,
-        ]);
+        const modelInterpreter3D = new ModelInterpreter3D(model3DText);
+        const vtxPositions = modelInterpreter3D.getVertexPositions();
+        const vtxNormals = modelInterpreter3D.getNormalsPositions();
 
         const vtxPositionsBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, vtxPositionsBuffer);
@@ -154,14 +187,28 @@ export class Engine {
         gl.enableVertexAttribArray(vtxPositionsAttrb);
         gl.bufferData(gl.ARRAY_BUFFER, vtxPositions, gl.STATIC_DRAW);
 
-        const rotationUniform = gl.getUniformLocation(program, "u_rotations");
-        if (!rotationUniform) {
-            console.log("NO ROTATION UNIFORM!");
+        const vtxNormalsBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vtxNormalsBuffer);
+        const vtxNormalsAttrb = gl.getAttribLocation(program, "a_vtx_normals");
+        gl.vertexAttribPointer(vtxNormalsAttrb, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vtxNormalsAttrb);
+        gl.bufferData(gl.ARRAY_BUFFER, vtxNormals, gl.STATIC_DRAW);
+
+        const transformationUniform = gl.getUniformLocation(
+            program,
+            "u_rotations",
+        );
+        const colorUniform = gl.getUniformLocation(
+            program,
+            "u_colors",
+        );
+        if (!transformationUniform || !colorUniform) {
+            console.log("MISSING UNIFORM!");
             return;
-        }
+        }        
 
         const vtxCount = vtxPositions.length / this.numberOfDimensions;
 
-        this.render(program, vertexArrayObj, rotationUniform, vtxCount);
+        this.render(program, vertexArrayObj, transformationUniform, colorUniform, vtxCount);
     }
 }
