@@ -184,7 +184,6 @@ export class ModelInterpreter3D {
                 }
             }
         }
-        console.log(normalsPositions);
 
         return new Float32Array(normalsPositions);
     }

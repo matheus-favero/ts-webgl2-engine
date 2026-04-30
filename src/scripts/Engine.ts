@@ -4,6 +4,7 @@ import { Transformation } from "./Transformation";
 export class Engine {
     private gl: WebGL2RenderingContext;
     private numberOfDimensions = 4;
+    private povDirection = [0, 0];
 
     constructor(canvas: HTMLCanvasElement) {
         this.gl = canvas.getContext("webgl2")!;
@@ -11,16 +12,46 @@ export class Engine {
             console.error("Your browser doesn't support webgl2");
             return;
         }
+
+        //add listeners to get buttons
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "a") {
+                this.povDirection[0] = -1;
+            }
+            if (e.key === "d") {
+                this.povDirection[0] = 1;
+            }
+            if (e.key === "s") {
+                this.povDirection[1] = -1;
+            }
+            if (e.key === "w") {
+                this.povDirection[1] = 1;
+            }
+        });
+        document.addEventListener("keyup", (e) => {
+            if (e.key === "a") {
+                this.povDirection[0] = 0;
+            }
+            if (e.key === "d") {
+                this.povDirection[0] = 0;
+            }
+            if (e.key === "s") {
+                this.povDirection[1] = 0;
+            }
+            if (e.key === "w") {
+                this.povDirection[1] = 0;
+            }
+        });
     }
 
     private getRotationSlidersValue(): number[] {
-        let valueX = Number(
+        const valueX = Number(
             (document.querySelector("#rotX") as HTMLInputElement)?.value,
         );
-        let valueY = Number(
+        const valueY = Number(
             (document.querySelector("#rotY") as HTMLInputElement)?.value,
         );
-        let valueZ = Number(
+        const valueZ = Number(
             (document.querySelector("#rotZ") as HTMLInputElement)?.value,
         );
 
@@ -28,31 +59,71 @@ export class Engine {
     }
 
     private getTranslationSlidersValue(): number[] {
-        let valueX = Number(
+        const valueX = Number(
             (document.querySelector("#transX") as HTMLInputElement)?.value,
         );
-        let valueY = Number(
+        const valueY = Number(
             (document.querySelector("#transY") as HTMLInputElement)?.value,
         );
-        let valueZ = Number(
+        const valueZ = Number(
             (document.querySelector("#transZ") as HTMLInputElement)?.value,
+        );
+
+        return [valueX, valueY, valueZ].map((item) => item * 0.02);
+    }
+    private getTranslationSlidersValue2(): number[] {
+        const valueX = Number(
+            (document.querySelector("#trans2X") as HTMLInputElement)?.value,
+        );
+        const valueY = Number(
+            (document.querySelector("#trans2Y") as HTMLInputElement)?.value,
+        );
+        const valueZ = Number(
+            (document.querySelector("#trans2Z") as HTMLInputElement)?.value,
         );
 
         return [valueX, valueY, valueZ].map((item) => item * 0.02);
     }
 
     private getScaleSlidersValue(): number[] {
-        let valueX = Number(
+        const valueX = Number(
             (document.querySelector("#scaleX") as HTMLInputElement)?.value,
         );
-        let valueY = Number(
+        const valueY = Number(
             (document.querySelector("#scaleY") as HTMLInputElement)?.value,
         );
-        let valueZ = Number(
+        const valueZ = Number(
             (document.querySelector("#scaleZ") as HTMLInputElement)?.value,
         );
 
         return [valueX, valueY, valueZ].map((item) => item * 0.05);
+    }
+
+    private getLightSlidersValue(): number[] {
+        const valueX = Number(
+            (document.querySelector("#lightX") as HTMLInputElement)?.value,
+        );
+        const valueY = Number(
+            (document.querySelector("#lightY") as HTMLInputElement)?.value,
+        );
+        const valueZ = Number(
+            (document.querySelector("#lightZ") as HTMLInputElement)?.value,
+        );
+
+        return [valueX, valueY, valueZ].map((item) => item * 0.01);
+    }
+
+    private getPOVMatrix(
+        originalPosition: number[],
+        translation: number[],
+    ): number[] {
+        const [transX, transY] = translation;
+        const POVMatrix = Transformation.applyTranslation(originalPosition, [
+            transX,
+            transY,
+            0,
+        ]);
+        return POVMatrix;
     }
 
     private configureShader(type: number, script: string) {
@@ -89,23 +160,11 @@ export class Engine {
         gl.deleteProgram(program);
     }
 
-    private render(
-        program: WebGLProgram,
-        vertexArrayObj: WebGLVertexArrayObject,
-        transformationUniform: WebGLUniformLocation,
-        colorUniform: WebGLUniformLocation,
-        vtxCount: number,
+    private getTransfMatrix(
+        scaling: number[],
+        rotation: number[],
+        translation: number[],
     ) {
-        const gl = this.gl;
-
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        gl.useProgram(program);
-
-        const rotation = this.getRotationSlidersValue();
-        const translation = this.getTranslationSlidersValue();
-        const scaling = this.getScaleSlidersValue();
-
         let transfMatrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 
         transfMatrix = Transformation.applyScaling(transfMatrix, scaling);
@@ -116,17 +175,50 @@ export class Engine {
         );
         transfMatrix = Transformation.applyPerspective(transfMatrix);
 
-        gl.uniformMatrix4fv(transformationUniform, false, transfMatrix);
-        gl.uniform3f(colorUniform, 0.5 , 0.3, 0.1);
+        return transfMatrix;
+    }
 
+    private render(
+        program: WebGLProgram,
+        transformationUniform: WebGLUniformLocation,
+        colorUniform: WebGLUniformLocation,
+        lightningUniform: WebGLUniformLocation,
+        vtxCount: number,
+    ) {
+        const gl = this.gl;
+
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        gl.useProgram(program);
+
+        const [lightningX, lightningY, lightningZ] =
+            this.getLightSlidersValue();
+        const player1TransfMatrix = this.getTransfMatrix(
+            this.getScaleSlidersValue(),
+            this.getRotationSlidersValue(),
+            this.getTranslationSlidersValue(),
+        );
+        gl.uniformMatrix4fv(transformationUniform, false, player1TransfMatrix);
+        gl.uniform4f(colorUniform, 1, 0.5, 0.1, 1.0);
+        gl.uniform3f(lightningUniform, lightningX, lightningY, lightningZ);
+
+        gl.drawArrays(gl.TRIANGLES, 0, vtxCount);
+        
+        //player2
+        const player2TransfMatrix = this.getTransfMatrix(
+            this.getScaleSlidersValue(),
+            this.getRotationSlidersValue(),
+            this.getTranslationSlidersValue2(),
+        );
+        gl.uniformMatrix4fv(transformationUniform, false, player2TransfMatrix);
         gl.drawArrays(gl.TRIANGLES, 0, vtxCount);
 
         window.requestAnimationFrame(() =>
             this.render(
                 program,
-                vertexArrayObj,
                 transformationUniform,
                 colorUniform,
+                lightningUniform,
                 vtxCount,
             ),
         );
@@ -194,21 +286,27 @@ export class Engine {
         gl.enableVertexAttribArray(vtxNormalsAttrb);
         gl.bufferData(gl.ARRAY_BUFFER, vtxNormals, gl.STATIC_DRAW);
 
+        //UNIFORMS AREA
         const transformationUniform = gl.getUniformLocation(
             program,
-            "u_rotations",
+            "u_transformations",
         );
-        const colorUniform = gl.getUniformLocation(
-            program,
-            "u_colors",
-        );
-        if (!transformationUniform || !colorUniform) {
+        const colorUniform = gl.getUniformLocation(program, "u_colors");
+        const lightningUniform = gl.getUniformLocation(program, "u_lightning");
+
+        if (!transformationUniform || !colorUniform || !lightningUniform) {
             console.log("MISSING UNIFORM!");
             return;
-        }        
+        }
 
         const vtxCount = vtxPositions.length / this.numberOfDimensions;
 
-        this.render(program, vertexArrayObj, transformationUniform, colorUniform, vtxCount);
+        this.render(
+            program,
+            transformationUniform,
+            colorUniform,
+            lightningUniform,
+            vtxCount,
+        );
     }
 }

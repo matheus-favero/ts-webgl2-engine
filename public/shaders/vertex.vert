@@ -4,18 +4,17 @@
 in vec4 a_vtx_position;
 in vec3 a_vtx_normals;
 
-uniform mat4 u_rotations;
-uniform vec3 u_colors;
+uniform mat4 u_transformations;
+uniform vec4 u_colors;
+uniform vec3 u_lightning;
 
-out vec3 vtx_colors;
+out vec4 vtx_colors;
 
 void main(){
-    
-    //vtx_colors = colors[gl_VertexID];
-    vtx_colors = u_colors * a_vtx_normals.y;
+    vec4 rotated_faces = u_transformations * vec4(a_vtx_normals, 1);
+    vtx_colors = u_colors * (rotated_faces.x + u_lightning.x) * (rotated_faces.y + u_lightning.y) * (rotated_faces.z + u_lightning.z);
 
-    vec4 transformedVector = u_rotations * a_vtx_position;
+    vec4 transformedVector = u_transformations * a_vtx_position;
 
     gl_Position = vec4(transformedVector);
 }
-
