@@ -4,7 +4,7 @@ import { Transformation } from "./Transformation";
 export class Engine {
     private gl: WebGL2RenderingContext;
     private numberOfDimensions = 4;
-    private povDirection = [0, 0];
+    private povDirection = [0, 0, 0];
 
     constructor(canvas: HTMLCanvasElement) {
         this.gl = canvas.getContext("webgl2")!;
@@ -44,6 +44,21 @@ export class Engine {
         });
     }
 
+    private getPOVTranslation(translation: number[]): number[] {
+        const [transX, transY, transZ] = translation;
+        const originalPosition = [
+            1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1,
+        ];
+
+        const POVMatrix = Transformation.applyTranslation(
+            originalPosition,
+            [transX, transY, transZ].map((item) => item * 0.02),
+        );
+        console.log(POVMatrix);
+
+        return POVMatrix;
+    }
+
     private getRotationSlidersValue(): number[] {
         const valueX = Number(
             (document.querySelector("#rotX") as HTMLInputElement)?.value,
@@ -71,6 +86,7 @@ export class Engine {
 
         return [valueX, valueY, valueZ].map((item) => item * 0.02);
     }
+
     private getTranslationSlidersValue2(): number[] {
         const valueX = Number(
             (document.querySelector("#trans2X") as HTMLInputElement)?.value,
@@ -113,19 +129,6 @@ export class Engine {
         return [valueX, valueY, valueZ].map((item) => item * 0.01);
     }
 
-    private getPOVMatrix(
-        originalPosition: number[],
-        translation: number[],
-    ): number[] {
-        const [transX, transY] = translation;
-        const POVMatrix = Transformation.applyTranslation(originalPosition, [
-            transX,
-            transY,
-            0,
-        ]);
-        return POVMatrix;
-    }
-
     private configureShader(type: number, script: string) {
         const gl = this.gl;
         const shader = gl.createShader(type);
@@ -161,9 +164,9 @@ export class Engine {
     }
 
     private getTransfMatrix(
-        scaling: number[],
-        rotation: number[],
-        translation: number[],
+        scaling = [0.5, 0.5, 0.5],
+        rotation = [0, 0, 0],
+        translation = [0, 0, 0],
     ) {
         let transfMatrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 
@@ -183,7 +186,9 @@ export class Engine {
         transformationUniform: WebGLUniformLocation,
         colorUniform: WebGLUniformLocation,
         lightningUniform: WebGLUniformLocation,
+        worldTransUniform: WebGLUniformLocation,
         vtxCount: number,
+        cameraPosition: number[],
     ) {
         const gl = this.gl;
 
@@ -191,8 +196,24 @@ export class Engine {
 
         gl.useProgram(program);
 
-        const [lightningX, lightningY, lightningZ] =
-            this.getLightSlidersValue();
+        //POV
+        //first, we need to update cameraPosition
+        let [cameraXAxis, cameraYAxis, cameraZAxis] = cameraPosition;
+        let [povXAxis, povYAxis, povZAxis] = this.povDirection;
+        cameraXAxis = cameraXAxis + povXAxis;
+        cameraYAxis = cameraYAxis + povYAxis;
+        cameraZAxis = cameraZAxis + povZAxis;
+        const newCameraPosition = [cameraXAxis, cameraYAxis, cameraZAxis];
+        //then, apply the matrix
+        const povTransfMatrix = this.getTransfMatrix(
+            this.getScaleSlidersValue(),
+            this.getRotationSlidersValue(),
+            this.getPOVTranslation(newCameraPosition),
+        );
+
+        gl.uniformMatrix4fv(worldTransUniform, false, povTransfMatrix);
+
+        //player1
         const player1TransfMatrix = this.getTransfMatrix(
             this.getScaleSlidersValue(),
             this.getRotationSlidersValue(),
@@ -200,14 +221,16 @@ export class Engine {
         );
         gl.uniformMatrix4fv(transformationUniform, false, player1TransfMatrix);
         gl.uniform4f(colorUniform, 1, 0.5, 0.1, 1.0);
+        const [lightningX, lightningY, lightningZ] =
+            this.getLightSlidersValue();
         gl.uniform3f(lightningUniform, lightningX, lightningY, lightningZ);
 
         gl.drawArrays(gl.TRIANGLES, 0, vtxCount);
-        
+
         //player2
         const player2TransfMatrix = this.getTransfMatrix(
-            this.getScaleSlidersValue(),
-            this.getRotationSlidersValue(),
+            undefined,
+            undefined,
             this.getTranslationSlidersValue2(),
         );
         gl.uniformMatrix4fv(transformationUniform, false, player2TransfMatrix);
@@ -219,7 +242,9 @@ export class Engine {
                 transformationUniform,
                 colorUniform,
                 lightningUniform,
+                worldTransUniform,
                 vtxCount,
+                [cameraXAxis, cameraYAxis, cameraZAxis],
             ),
         );
     }
@@ -293,20 +318,32 @@ export class Engine {
         );
         const colorUniform = gl.getUniformLocation(program, "u_colors");
         const lightningUniform = gl.getUniformLocation(program, "u_lightning");
+        const worldTransUniform = gl.getUniformLocation(
+            program,
+            "u_world_transformation",
+        );
 
-        if (!transformationUniform || !colorUniform || !lightningUniform) {
+        if (
+            !transformationUniform ||
+            !colorUniform ||
+            !lightningUniform ||
+            !worldTransUniform
+        ) {
             console.log("MISSING UNIFORM!");
             return;
         }
 
         const vtxCount = vtxPositions.length / this.numberOfDimensions;
 
+        const initialCameraPosition = [0, 0, 0];
         this.render(
             program,
             transformationUniform,
             colorUniform,
             lightningUniform,
+            worldTransUniform,
             vtxCount,
+            initialCameraPosition,
         );
     }
 }

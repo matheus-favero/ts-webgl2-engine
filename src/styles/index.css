@@ -1,5 +1,5 @@
 *{
-    font-family: 'Comic Sans MS', cursive; 
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif 
 }
 
 body{
@@ -15,9 +15,9 @@ body > .container{
     display: flex;
     gap: 32px;
 }
-body > .container > h4{
+body > .container > div > h4{
     margin: 0;    
 }
-body > .container > input{
+body > .container > div > input{
     margin-bottom: 32px;    
 }
