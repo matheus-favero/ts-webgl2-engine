@@ -15,46 +15,49 @@ export class Engine {
 
         //add listeners to get buttons
         document.addEventListener("keydown", (e) => {
-            if (e.key === "a") {
-                this.povDirection[0] = -1;
-            }
-            if (e.key === "d") {
+            const input = e.key.toLowerCase();
+            if (input === "a") {
                 this.povDirection[0] = 1;
             }
-            if (e.key === "s") {
-                this.povDirection[1] = -1;
+            if (input === "d") {
+                this.povDirection[0] = -1;
             }
-            if (e.key === "w") {
-                this.povDirection[1] = 1;
+            if (input === "s") {
+                this.povDirection[2] = 1;
+            }
+            if (input === "w") {
+                this.povDirection[2] = -1;
             }
         });
         document.addEventListener("keyup", (e) => {
-            if (e.key === "a") {
+            const input = e.key.toLowerCase();
+
+            if (input === "a") {
                 this.povDirection[0] = 0;
             }
-            if (e.key === "d") {
+            if (input === "d") {
                 this.povDirection[0] = 0;
             }
-            if (e.key === "s") {
-                this.povDirection[1] = 0;
+            if (input === "s") {
+                this.povDirection[2] = 0;
             }
-            if (e.key === "w") {
-                this.povDirection[1] = 0;
+            if (input === "w") {
+                this.povDirection[2] = 0;
             }
         });
     }
 
     private getPOVTranslation(translation: number[]): number[] {
         const [transX, transY, transZ] = translation;
+
         const originalPosition = [
             1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1,
         ];
 
         const POVMatrix = Transformation.applyTranslation(
             originalPosition,
-            [transX, transY, transZ].map((item) => item * 0.02),
+            [transX, transY, transZ].map((item) => item * 0.05),
         );
-        console.log(POVMatrix);
 
         return POVMatrix;
     }
@@ -177,6 +180,7 @@ export class Engine {
             translation,
         );
         transfMatrix = Transformation.applyPerspective(transfMatrix);
+        
 
         return transfMatrix;
     }
@@ -205,11 +209,7 @@ export class Engine {
         cameraZAxis = cameraZAxis + povZAxis;
         const newCameraPosition = [cameraXAxis, cameraYAxis, cameraZAxis];
         //then, apply the matrix
-        const povTransfMatrix = this.getTransfMatrix(
-            this.getScaleSlidersValue(),
-            this.getRotationSlidersValue(),
-            this.getPOVTranslation(newCameraPosition),
-        );
+        const povTransfMatrix = this.getPOVTranslation(newCameraPosition);
 
         gl.uniformMatrix4fv(worldTransUniform, false, povTransfMatrix);
 
@@ -221,6 +221,7 @@ export class Engine {
         );
         gl.uniformMatrix4fv(transformationUniform, false, player1TransfMatrix);
         gl.uniform4f(colorUniform, 1, 0.5, 0.1, 1.0);
+
         const [lightningX, lightningY, lightningZ] =
             this.getLightSlidersValue();
         gl.uniform3f(lightningUniform, lightningX, lightningY, lightningZ);

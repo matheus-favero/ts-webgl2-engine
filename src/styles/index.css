@@ -17,6 +17,7 @@ body > .container{
 }
 body > .container > div > h4{
     margin: 0;    
+    font-size: 0.7rem;
 }
 body > .container > div > input{
     margin-bottom: 32px;    
