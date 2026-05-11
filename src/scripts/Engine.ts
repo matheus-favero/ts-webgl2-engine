@@ -56,7 +56,7 @@ export class Engine {
 
         const POVMatrix = Transformation.applyTranslation(
             originalPosition,
-            [transX, transY, transZ].map((item) => item * 0.05),
+            [transX, transY, transZ].map((item) => item * 0.0000000001),
         );
 
         return POVMatrix;
@@ -170,17 +170,28 @@ export class Engine {
         scaling = [0.5, 0.5, 0.5],
         rotation = [0, 0, 0],
         translation = [0, 0, 0],
+        worldTranslation: number[],
     ) {
         let transfMatrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 
         transfMatrix = Transformation.applyScaling(transfMatrix, scaling);
-        transfMatrix = Transformation.applyRotation(transfMatrix, rotation);
+        transfMatrix = Transformation.applyRotation(
+            transfMatrix,
+            rotation,
+            this.povDirection,
+        );
         transfMatrix = Transformation.applyTranslation(
             transfMatrix,
             translation,
         );
+
+        if (worldTranslation)
+            transfMatrix = Transformation.applyTranslation(
+                transfMatrix,
+                worldTranslation,
+            );
+
         transfMatrix = Transformation.applyPerspective(transfMatrix);
-        
 
         return transfMatrix;
     }
@@ -200,32 +211,35 @@ export class Engine {
 
         gl.useProgram(program);
 
-        //POV
-        //first, we need to update cameraPosition
-        let [cameraXAxis, cameraYAxis, cameraZAxis] = cameraPosition;
-        let [povXAxis, povYAxis, povZAxis] = this.povDirection;
-        cameraXAxis = cameraXAxis + povXAxis;
-        cameraYAxis = cameraYAxis + povYAxis;
-        cameraZAxis = cameraZAxis + povZAxis;
-        const newCameraPosition = [cameraXAxis, cameraYAxis, cameraZAxis];
-        //then, apply the matrix
-        const povTransfMatrix = this.getPOVTranslation(newCameraPosition);
+        //updates camera position
+        const [cameraPositionX, cameraPositionY, cameraPositionZ] =
+            cameraPosition;
+        const [povDirectionX, povDirectionY, povDirectionZ] = this.povDirection;
+        const newCameraPosition = [
+            cameraPositionX + povDirectionX,
+            cameraPositionY + povDirectionY,
+            cameraPositionZ + povDirectionZ,
+        ];
 
-        gl.uniformMatrix4fv(worldTransUniform, false, povTransfMatrix);
+        //first, we set the light
+        const [lightningX, lightningY, lightningZ] =
+            this.getLightSlidersValue();
+        gl.uniform3f(
+            lightningUniform,
+            lightningX - newCameraPosition[0],
+            lightningY - newCameraPosition[1],
+            lightningZ - newCameraPosition[2],
+        );
 
         //player1
         const player1TransfMatrix = this.getTransfMatrix(
             this.getScaleSlidersValue(),
             this.getRotationSlidersValue(),
             this.getTranslationSlidersValue(),
+            newCameraPosition,
         );
         gl.uniformMatrix4fv(transformationUniform, false, player1TransfMatrix);
         gl.uniform4f(colorUniform, 1, 0.5, 0.1, 1.0);
-
-        const [lightningX, lightningY, lightningZ] =
-            this.getLightSlidersValue();
-        gl.uniform3f(lightningUniform, lightningX, lightningY, lightningZ);
-
         gl.drawArrays(gl.TRIANGLES, 0, vtxCount);
 
         //player2
@@ -233,6 +247,7 @@ export class Engine {
             undefined,
             undefined,
             this.getTranslationSlidersValue2(),
+            newCameraPosition,
         );
         gl.uniformMatrix4fv(transformationUniform, false, player2TransfMatrix);
         gl.drawArrays(gl.TRIANGLES, 0, vtxCount);
@@ -245,7 +260,7 @@ export class Engine {
                 lightningUniform,
                 worldTransUniform,
                 vtxCount,
-                [cameraXAxis, cameraYAxis, cameraZAxis],
+                newCameraPosition,
             ),
         );
     }
@@ -324,15 +339,10 @@ export class Engine {
             "u_world_transformation",
         );
 
-        if (
-            !transformationUniform ||
-            !colorUniform ||
-            !lightningUniform ||
-            !worldTransUniform
-        ) {
-            console.log("MISSING UNIFORM!");
-            return;
-        }
+        // if (!transformationUniform || !colorUniform || !lightningUniform || !worldTransUniform) {
+        //     console.log("MISSING UNIFORM!");
+        //     return;
+        // }
 
         const vtxCount = vtxPositions.length / this.numberOfDimensions;
 

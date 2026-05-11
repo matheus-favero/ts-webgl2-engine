@@ -1,10 +1,7 @@
 export class Transformation {
     private static numberOfDimensions = 4;
 
-    static matrixMult(
-        matrix1: number[],
-        matrix2: number[],
-    ): number[] {
+    static matrixMult(matrix1: number[], matrix2: number[]): number[] {
         const numberOfDimensions = this.numberOfDimensions;
         let matrix: number[] = [];
 
@@ -23,7 +20,11 @@ export class Transformation {
         return matrix;
     }
 
-    static applyRotation(matrix: number[], rotations: number[]): number[] {
+    static applyRotation(
+        matrix: number[],
+        rotations: number[],
+        newOrigin: number[],
+    ): number[] {
         const [zRotation, yRotation, xRotation] = rotations;
 
         const sinZ = Math.sin(zRotation);
@@ -42,23 +43,32 @@ export class Transformation {
 
         const zy = this.matrixMult(z, y);
         const yx = this.matrixMult(zy, x);
-        
-        const finalMatrix = this.matrixMult(yx, w);
 
-        return this.matrixMult(matrix, finalMatrix);
+        const rotationMatrix = this.matrixMult(yx, w);
+
+        return this.matrixMult(matrix, rotationMatrix);
     }
 
-    static applyScaling(
-        matrix: number[],
-        scaling: number[],
-    ): number[] {
+    static applyScaling(matrix: number[], scaling: number[]): number[] {
         const [distanceX, distanceY, distanceZ] = scaling;
 
         const transformation = [
-            distanceX, 0, 0, 0, 
-            0, distanceY, 0, 0, 
-            0, 0, distanceZ, 0, 
-            0, 0, 0, 1
+            distanceX,
+            0,
+            0,
+            0,
+            0,
+            distanceY,
+            0,
+            0,
+            0,
+            0,
+            distanceZ,
+            0,
+            0,
+            0,
+            0,
+            1,
         ];
 
         const appliedScaling = this.matrixMult(matrix, transformation);
@@ -68,16 +78,28 @@ export class Transformation {
 
     static applyTranslation(matrix: number[], translation: number[]): number[] {
         const [distanceX, distanceY, distanceZ] = translation;
-        
+
         const transformation = [
-            1, 0, 0, 0, 
-            0, 1, 0, 0, 
-            0, 0, 1, 0, 
-            distanceX, distanceY, distanceZ, 1
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            distanceX,
+            distanceY,
+            distanceZ,
+            1,
         ];
 
         const appliedTransl = this.matrixMult(matrix, transformation);
-        
+
         return appliedTransl;
     }
 
@@ -86,5 +108,4 @@ export class Transformation {
         const appliedPerspective = this.matrixMult(matrix, w);
         return appliedPerspective;
     }
-
 }

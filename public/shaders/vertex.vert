@@ -14,7 +14,7 @@ out vec4 vtx_colors;
 void main(){
     vec4 rotated_faces = u_transformations * vec4(a_vtx_normals, 1);
     vtx_colors = u_colors * (rotated_faces.x + u_lightning.x) * (rotated_faces.y + u_lightning.y) * (rotated_faces.z + u_lightning.z);
-    vec4 transformedVector = u_transformations * u_world_transformation * a_vtx_position ;
+    vec4 transformedVector = u_transformations * a_vtx_position ;
 
     gl_Position = vec4(transformedVector);
 }
