@@ -1,0 +1,87 @@
+---
+import "../styles/index.css";
+---
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" href="/favicon.ico" />
+        <meta name="viewport" content="width=device-width" />
+        <meta name="generator" content={Astro.generator} />
+        <title>Astro</title>
+    </head>
+    <body>
+        <canvas> Your browser doesn't support Webgl2 </canvas>
+        <div class="container">
+            <div>
+                <h4>Rotate X:</h4>
+                <input type="range" min="0" max="100" value="0" id="rotX" />
+
+                <h4>Rotate Y:</h4>
+                <input type="range" min="0" max="100" value="0" id="rotY" />
+
+                <h4>Rotate Z:</h4>
+                <input type="range" min="0" max="100" value="0" id="rotZ" />
+            </div>
+
+            <div>
+                <h4>Translate X:</h4>
+                <input type="range" min="-100" max="100" value="0" id="transX" />
+
+                <h4>Translate Y:</h4>
+                <input type="range" min="-100" max="100" value="0" id="transY" />
+
+                <h4>Translate Z:</h4>
+                <input type="range" min="-100" max="100" value="100" id="transZ" />
+            </div>
+
+            <div>
+                <h4>Scale X:</h4>
+                <input type="range" min="0" max="100" value="10" id="scaleX" />
+
+                <h4>Scale Y:</h4>
+                <input type="range" min="0" max="100" value="10" id="scaleY" />
+
+                <h4>Scale Z:</h4>
+                <input type="range" min="0" max="100" value="10" id="scaleZ" />
+            </div>
+
+            <div>
+                <h4>Light Position X:</h4>
+                <input type="range" min="-100" max="100" value="0" id="lightX" />
+
+                <h4>Light Position Y:</h4>
+                <input type="range" min="-100" max="100" value="0" id="lightY" />
+
+                <h4>Light Position Z:</h4>
+                <input type="range" min="-100" max="100" value="0" id="lightZ" />
+            </div>
+
+            <div>
+                <h4>Translate 2 X:</h4>
+                <input type="range" min="-100" max="100" value="0" id="trans2X" />
+
+                <h4>Translate 2 Y:</h4>
+                <input type="range" min="-100" max="100" value="0" id="trans2Y" />
+
+                <h4>Translate 2 Z:</h4>
+                <input type="range" min="-100" max="100" value="100" id="trans2Z" />
+            </div>
+        </div>
+
+        <script>
+            import { Engine } from "../scripts/Engine";
+            const canvas = document.querySelector("canvas");
+
+            if (!canvas) {
+                console.error("No element canvas detected");
+            } else {
+                canvas.width = window.innerHeight;
+                canvas.height = window.innerHeight;
+                const engine = new Engine(canvas);
+                engine.init();
+            }
+        </script>
+    </body>
+</html>

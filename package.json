@@ -1,18 +1,14 @@
 {
-  "name": "ts-webgl2-engine",
-  "private": true,
-  "version": "0.0.0",
+  "name": "tarot-mage",
   "type": "module",
+  "version": "0.0.1",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
   },
-  "devDependencies": {
-    "typescript": "~5.9.3",
-    "vite": "npm:rolldown-vite@7.2.5"
-  },
-  "overrides": {
-    "vite": "npm:rolldown-vite@7.2.5"
+  "dependencies": {
+    "astro": "^5.17.1"
   }
 }
