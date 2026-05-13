@@ -295,7 +295,7 @@ export class Engine {
         const vertexArrayObj = gl.createVertexArray();
         gl.bindVertexArray(vertexArrayObj);
 
-        const model3DObj = await fetch("./3d/Caveira_fudida.obj");
+        const model3DObj = await fetch("./3d/Caveira.obj");
         const model3DText = await model3DObj.text();
 
         const modelInterpreter3D = new ModelInterpreter3D(model3DText);
